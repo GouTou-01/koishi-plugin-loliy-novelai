@@ -1,5 +1,7 @@
 import { Context, Schema, segment, h } from 'koishi'
-import { jsx } from '@satorijs/element/jsx-runtime'
+import * as element from '@satorijs/element'
+
+const { jsx } = element
 
 export const name = 'loliy-novelai'
 
