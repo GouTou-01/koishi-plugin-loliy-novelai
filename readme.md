@@ -2,29 +2,40 @@
 
 [![npm](https://img.shields.io/npm/v/koishi-plugin-loliy-novelai?style=flat-square)](https://www.npmjs.com/package/koishi-plugin-loliy-novelai)
 
-基于 loliy API 的 AI 画图插件
+基于 Loliy API 和 Hua API 的 AI 画图插件
 
-## 获取 API Key
+## 支持的 API 平台
 
-获取Key请点击：https://www.loliy.top/
-NovelAi绘画第三方平台
-价格实惠
+1. Loliy API
+   - 官网：https://www.loliy.top/
+   - 支持所有尺寸（标准尺寸、大图尺寸、壁纸尺寸）
+   - 价格实惠
+
+2. Hua API
+   - 官网：https://hua.shigure.top/
+   - 仅支持标准尺寸
+   - 需要授权密钥和官方密钥（可选）
 
 ## 配置项
 
-- `apiKey`: 必填，API 密钥
+### 基础设置
+- `apiType`: 选择使用的 API (loliy 或 hua)
+- `apiKeys`: Loliy API密钥列表 (可添加多个Key同时处理多张图片)
+- `huaAuthKeys`: Hua API授权密钥列表
+- `huaNaiKeys`: Hua API官方密钥列表 (可选)
+- `useHuaCache`: 是否使用Hua API的服务器缓存 (默认关闭=不使用缓存)
 - `defaultSizeCategory`: 默认尺寸类别
   - 标准尺寸 (832x1216)
-  - 大图尺寸 (1024x1536)
-  - 壁纸尺寸 (1088x1920)
+  - 大图尺寸 (1024x1536) - 仅 Loliy API 支持
+  - 壁纸尺寸 (1088x1920) - 仅 Loliy API 支持
   - 小图尺寸 (512x768)
 - `defaultOrientation`: 默认图片方向
   - 竖图 (高度 > 宽度)
   - 横图 (宽度 > 高度)
   - 方图 (宽度 = 高度)
 - `model`: 默认使用的模型
-- `enableLargeSize`: 是否启用大图尺寸(消耗更多点数)
-- `enableWallpaperSize`: 是否启用壁纸尺寸(消耗更多点数)
+- `enableLargeSize`: 是否启用大图尺寸(消耗更多点数，仅Loliy API支持)
+- `enableWallpaperSize`: 是否启用壁纸尺寸(消耗更多点数，仅Loliy API支持)
 - `negativePrompt`: 默认负面提示词
 - `sampler`: 采样器
 - `cfgScale`: 提示词相关性 (1-10)
@@ -39,19 +50,22 @@ NovelAi绘画第三方平台
 - 方图：适合头像、物品
 
 可用尺寸：
-- 标准尺寸：832x1216 / 1216x832 / 1024x1024
-- 大图尺寸：1024x1536 / 1536x1024 / 1472x1472
-- 壁纸尺寸：1088x1920 / 1920x1088
-- 小图尺寸：512x768 / 768x512 / 640x640
+- 标准尺寸：832x1216 / 1216x832 / 1024x1024（两个平台都支持）
+- 大图尺寸：1024x1536 / 1536x1024 / 1472x1472（仅 Loliy API）
+- 壁纸尺寸：1088x1920 / 1920x1088（仅 Loliy API）
+- 小图尺寸：512x768 / 768x512 / 640x640（仅 Loliy API）
+
+注意：使用 Hua API 时会自动使用标准尺寸，即使选择了其他尺寸也会自动调整。
 
 ## 使用方法
 
 帮助命令：
 - `绘画菜单`或`绘画功能` - 查看AI绘画功能菜单
+- `剩余次数`或`查询次数` - 查询今日剩余绘图次数
 
 基础命令：
 - `画` - 生成AI图片
-- `nai` - 生成AI图片（画的替代命令）
+- `#nai` - 生成AI图片（画的替代命令）
 
 方向关键词（支持完整词和简写）：
 - 横图/横：生成横向图片
@@ -66,9 +80,9 @@ NovelAi绘画第三方平台
   - `furry` 或 `v3f` - 使用 NAI Diffusion Furry V3
 
 组合使用示例：
-- `nai v4c 横 1girl, ` - 使用V4先行版生成横图女孩
+- `#nai v4c 横 1girl, ` - 使用V4先行版生成横图女孩
 - `画 方 v3 1girl, ` - 使用V3模型生成方形女孩
-- `nai 壁纸 furry 竖 1girl, ` - 使用Furry模型生成竖向壁纸女孩图片
+- `#nai 壁纸 furry 竖 1girl, ` - 使用Furry模型生成竖向壁纸女孩图片
 
 注意：
 1. 方向关键词（横/方/竖）和其完整形式（横图/方图/竖图）都可以使用
@@ -80,6 +94,7 @@ NovelAi绘画第三方平台
 
 在插件配置中可以设置以下高级参数：
 
+- **质量提示词**：将设置的提示词自动添加到用户输入的后面
 - **画师提示词列表**：可以添加多个画师提示词，每次生成图片时会随机选择其中一个添加到提示词前面
 - **负面提示词**：用于排除不想要的元素，默认值为常见的负面提示词
 - **采样器**：根据模型自动调整可用选项
@@ -98,3 +113,34 @@ NovelAi绘画第三方平台
 - `contentMode`: 发送内容模式
   - 仅图片：只发送生成的图片
   - 详细模式：图片和详细信息一起发送，一起撤回
+- `enableTranslation`: 是否启用提示词自动翻译功能(中文→英文)，默认关闭
+- `showTranslationResult`: 是否显示翻译结果，默认开启
+
+**自动翻译功能**：启用后，用户输入的中文提示词会自动翻译成英文，再发送给AI生成图片。这有助于产生更好的结果，因为大部分AI模型对英文prompt的理解更好。插件内置了IP伪装功能，可以绕过翻译API的请求频率限制。
+
+### 重试设置
+- `maxRetries`: API请求失败时的最大重试次数，默认3次
+- `retryDelay`: 重试之间的延迟时间(毫秒)，默认1000ms
+
+### 用户限制
+- `enableDailyLimit`: 是否启用每日绘图次数限制，默认关闭
+- `dailyLimit`: 每个用户每日最大绘图次数，默认30次（仅在启用限制时生效）
+- `whitelistUsers`: 白名单用户ID列表，这些用户不受每日限制（仅在启用限制时生效）
+
+### 提示词设置
+- `enableDefaultPrompt`: 是否启用质量提示词，默认关闭
+- `defaultPrompt`: 质量提示词，会自动添加到用户输入的后面
+  - 例如：设置为"masterpiece, best quality"，用户输入"1girl"，最终使用的提示词为"1girl, masterpiece, best quality"
+  - 如果设置为空，即使启用了此功能也不会添加任何内容
+
+### API 特性对比
+
+| 功能 | Loliy API | Hua API |
+|------|-----------|---------|
+| 标准尺寸 | ✓ | ✓ |
+| 大图尺寸 | ✓ | ✗ |
+| 壁纸尺寸 | ✓ | ✗ |
+| 小图尺寸 | ✓ | ✗ |
+| 服务器缓存 | ✗ | ✓ |
+| 官方密钥支持 | ✗ | ✓ |
+| 多Key并发 | ✓ | ✓ |

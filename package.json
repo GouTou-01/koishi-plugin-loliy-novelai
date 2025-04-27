@@ -1,7 +1,7 @@
 {
   "name": "koishi-plugin-loliy-novelai",
-  "description": "基于 loliy API 的 Ai 画图插件",
-  "version": "0.0.3",
+  "description": "基于 Loliy API 和 Hua API 的 AI 画图插件",
+  "version": "0.0.10",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
@@ -9,38 +9,43 @@
     "dist"
   ],
   "license": "MIT",
-  "author": "github",
-  "homepage": "https://github.com/GouTou-01/koishi-plugin-loliy-novelai",
+  "homepage": "https://www.loliy.top",
   "repository": {
-    "type": "git",
-    "url": "git+https://github.com/GouTou-01/koishi-plugin-loliy-novelai.git"
+    "type": "github",
+    "url": "https://github.com/GouTou-01/koishi-plugin-loliy-novelai"
+  },
+  "bugs": {
+    "url": "https://github.com/GouTou-01/koishi-plugin-loliy-novelai/issues"
   },
   "keywords": [
-    "chatbot",
     "koishi",
     "plugin",
     "novelai",
     "ai",
-    "image"
+    "image",
+    "loliy",
+    "hua"
   ],
   "scripts": {
     "build": "tsc",
-    "build:watch": "tsc -w"
+    "build:watch": "tsc -w",
+    "pub": "npm publish --access public --registry https://registry.npmjs.org"
   },
   "peerDependencies": {
     "koishi": "^4.18.7"
   },
   "dependencies": {
     "@satorijs/element": "^2.5.1",
-    "@types/node": "^20.10.0"
+    "@types/node": "^20.10.0",
+    "typescript": "^5.0.0"
   },
   "devDependencies": {
-    "typescript": "^5.0.0"
+    "koishi": "^4.18.7"
   },
   "koishi": {
     "description": {
       "en": "NovelAI image generation plugin based on loliy API",
-      "zh": "基于 loliy API 的 Ai 画图插件"
+      "zh": "基于 Loliy API 和 Hua API 的 AI 画图插件"
     },
     "service": {
       "required": ["http"]
