@@ -14,13 +14,14 @@
 2. Hua API
    - 官网：https://hua.shigure.top/
    - 仅支持标准尺寸
-   - 需要授权密钥和官方密钥（可选）
+   - 需要授权密钥
+   - 官方密钥可选
 
 ## 配置项
 
 ### 基础设置
 - `apiType`: 选择使用的 API (loliy 或 hua)
-- `apiKeys`: Loliy API密钥列表 (可添加多个Key同时处理多张图片)
+- `apiKeys`: Loliy API密钥列表 (可选，可添加多个Key同时处理多张图片)
 - `huaAuthKeys`: Hua API授权密钥列表
 - `huaNaiKeys`: Hua API官方密钥列表 (可选)
 - `useHuaCache`: 是否使用Hua API的服务器缓存 (默认关闭=不使用缓存)
@@ -39,7 +40,7 @@
 - `negativePrompt`: 默认负面提示词
 - `sampler`: 采样器
 - `cfgScale`: 提示词相关性 (1-10)
-- `steps`: 生成步数 (20-50)
+- `steps`: 生成步数 (1-50)
 - `noiseSchedule`: 噪声调度
 
 ### 尺寸说明

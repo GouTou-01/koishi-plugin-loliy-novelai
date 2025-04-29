@@ -304,7 +304,7 @@ export const Config = Schema.intersect([
       .default('loliy')
       .description('选择使用的 API (loliy 或 hua，注意：hua仅支持标准尺寸)'),
     apiKeys: Schema.array(String)
-      .required()
+      .default([])
       .description('Loliy API密钥列表 (可添加多个Key同时处理多张图片)')
       .role('table'),
     huaAuthKeys: Schema.array(String)
@@ -685,16 +685,16 @@ export function apply(ctx: Context) {
       
       // 使用Promise来处理单个请求
       const processRequest = async () => {
-        try {
-          // 如果请求超过5分钟，自动移除
-          if (Date.now() - nextItem.timestamp > 5 * 60 * 1000) {
-            removeFromQueue(nextItem)
-            processingKeys.delete(apiKey)
+      try {
+        // 如果请求超过5分钟，自动移除
+        if (Date.now() - nextItem.timestamp > 5 * 60 * 1000) {
+          removeFromQueue(nextItem)
+          processingKeys.delete(apiKey)
             await nextItem.session.send('请求超时，已自动取消。请重新发送绘图指令。')
-            return
-          }
+          return
+        }
 
-          // 计算尺寸和模型名称
+        // 计算尺寸和模型名称
           let currentOrientation = nextItem.orientation || ctx.config.defaultOrientation
           let currentSizeCategory = nextItem.sizeCategory || ctx.config.defaultSizeCategory
           
@@ -720,47 +720,47 @@ export function apply(ctx: Context) {
             currentSizeCategory = '标准尺寸' as const
           }
 
-          const size = SIZES[SIZE_CATEGORY_MAP[currentSizeCategory]][ORIENTATION_MAP[currentOrientation]]
+        const size = SIZES[SIZE_CATEGORY_MAP[currentSizeCategory]][ORIENTATION_MAP[currentOrientation]]
           const [width, height] = size.split('x').map(Number)
+        
+        // 获取模型名称
+        let modelName = '默认模型'
+        if (nextItem.modelOverride) {
+          modelName = Object.entries(AVAILABLE_MODELS).find(([key, value]) => key === nextItem.modelOverride)?.[1] || '自定义模型'
+        } else if (userModels.get(nextItem.userId)) {
+          modelName = Object.entries(MODEL_MAP)
+            .find(([name, key]) => key === userModels.get(nextItem.userId))?.[0] || '自定义模型'
+        } else {
+          modelName = ctx.config.model
+        }
 
-          // 获取模型名称
-          let modelName = '默认模型'
-          if (nextItem.modelOverride) {
-            modelName = Object.entries(AVAILABLE_MODELS).find(([key, value]) => key === nextItem.modelOverride)?.[1] || '自定义模型'
-          } else if (userModels.get(nextItem.userId)) {
-            modelName = Object.entries(MODEL_MAP)
-              .find(([name, key]) => key === userModels.get(nextItem.userId))?.[0] || '自定义模型'
-          } else {
-            modelName = ctx.config.model
-          }
-
-          // 只有用户的第一个请求才发送处理提示
-          if (!usersSentProcessingMessage.has(nextItem.userId)) {
+        // 只有用户的第一个请求才发送处理提示
+        if (!usersSentProcessingMessage.has(nextItem.userId)) {
             const apiTypeText = ctx.config.apiType === 'hua' ? 'Hua' : 'Loliy'
             await nextItem.session.send(`正在使用${apiTypeText} API生成图片... (${size}, ${currentSizeCategory}, 模型: ${modelName})`)
-            usersSentProcessingMessage.add(nextItem.userId)
-          }
+          usersSentProcessingMessage.add(nextItem.userId)
+        }
 
-          // 处理图片生成的核心逻辑
-          await generateImage(nextItem, apiKey)
-        } catch (error) {
+        // 处理图片生成的核心逻辑
+        await generateImage(nextItem, apiKey)
+      } catch (error) {
           const errorMessage = error instanceof Error ? error.message : '未知错误'
-          ctx.logger('loliy-novelai').error(error)
+        ctx.logger('loliy-novelai').error(error)
           await nextItem.session.send(errorMessage)
-        } finally {
-          // 移除已处理的请求
-          removeFromQueue(nextItem)
-          processingKeys.delete(apiKey)
-          
+      } finally {
+        // 移除已处理的请求
+        removeFromQueue(nextItem)
+        processingKeys.delete(apiKey)
+        
           // 如果队列中还有未处理的请求，继续处理队列
           if (drawingQueue.length > 0) {
             // 添加短暂延迟后继续处理队列，避免连续翻译
             setTimeout(() => processQueue(), 1000)
           } else {
             // 队列为空，清空已发送处理提示的用户集合
-            usersSentProcessingMessage.clear()
-          }
+          usersSentProcessingMessage.clear()
         }
+      }
       }
 
       // 使用setTimeout来延迟执行，但返回Promise
@@ -787,9 +787,9 @@ export function apply(ctx: Context) {
     
     while (retries < ctx.config.maxRetries) {
       try {
-        const { session, prompt, modelOverride } = item
-        let currentOrientation = item.orientation || ctx.config.defaultOrientation
-        let currentSizeCategory = item.sizeCategory || ctx.config.defaultSizeCategory
+    const { session, prompt, modelOverride } = item
+    let currentOrientation = item.orientation || ctx.config.defaultOrientation
+    let currentSizeCategory = item.sizeCategory || ctx.config.defaultSizeCategory
 
         // 用户输入的提示词
         let userPrompt = prompt
@@ -821,7 +821,7 @@ export function apply(ctx: Context) {
         if (ctx.config.enableArtistPrompts && !hasArtistTag(userPrompt)) {
           if (ctx.config.artistPrompts && ctx.config.artistPrompts.length > 0) {
             artistPrompt = ctx.config.artistPrompts[Math.floor(Math.random() * ctx.config.artistPrompts.length)]
-            if (artistPrompt) {
+            if (artistPrompt && ctx.config.apiType === 'loliy') {
               finalPromptParts.push(formatPromptEnding(artistPrompt))
             }
           }
@@ -846,16 +846,16 @@ export function apply(ctx: Context) {
         const internalOrientation = ORIENTATION_MAP[currentOrientation]
         const internalSizeCategory = SIZE_CATEGORY_MAP[currentSizeCategory]
 
-        // 获取对应尺寸
-        const size = SIZES[SIZE_CATEGORY_MAP[currentSizeCategory]][ORIENTATION_MAP[currentOrientation]]
-        const [width, height] = size.split('x').map(Number)
+    // 获取对应尺寸
+    const size = SIZES[SIZE_CATEGORY_MAP[currentSizeCategory]][ORIENTATION_MAP[currentOrientation]]
+    const [width, height] = size.split('x').map(Number)
 
-        // 使用模型覆盖或用户选择的模型或默认模型
-        const model = modelOverride || userModels.get(item.userId) || MODEL_MAP[ctx.config.model]
+    // 使用模型覆盖或用户选择的模型或默认模型
+    const model = modelOverride || userModels.get(item.userId) || MODEL_MAP[ctx.config.model]
 
-        // 根据模型选择适合的采样器和噪声调度
-        const sampler = getSamplerForModel(model, ctx.config.sampler)
-        const noiseSchedule = getNoiseScheduleForModel(model, ctx.config.noiseSchedule)
+    // 根据模型选择适合的采样器和噪声调度
+    const sampler = getSamplerForModel(model, ctx.config.sampler)
+    const noiseSchedule = getNoiseScheduleForModel(model, ctx.config.noiseSchedule)
 
         let imageContent: string | segment
         let seed: string = '-1'
@@ -883,57 +883,60 @@ export function apply(ctx: Context) {
           huaUrl.searchParams.set('size', currentOrientation)
           huaUrl.searchParams.set('sampler', sampler)
           huaUrl.searchParams.set('noise_schedule', noiseSchedule)
+          huaUrl.searchParams.set('scale', ctx.config.cfgScale.toString())
+          huaUrl.searchParams.set('steps', ctx.config.steps.toString())
+          huaUrl.searchParams.append('no_random_artist', '')
           
           if (!ctx.config.useHuaCache) {
             huaUrl.searchParams.set('nocache', '1')
           }
-
+          
           // Hua API 直接返回图片URL，直接使用segment.image
           imageContent = segment.image(huaUrl.toString())
           
         } else {
           // Loliy API 处理逻辑
           requestData = {
-            token: apiKey,
-            model,
-            width,
-            height,
-            steps: ctx.config.steps,
-            prompt: finalPrompt,
-            n_prompt: ctx.config.negativePrompt,
-            scale: ctx.config.cfgScale.toString(),
-            auto: false,
-            cfg_scale: '0',
-            seed: '-1',
-            sampler,
-            SMEA: false,
-            DYN: false,
-            noise: noiseSchedule,
-            img2: {
-              img: '',
-              noise: '0',
-              strength: '0.7',
-              typesetting: '1'
-            },
-            reference: {
-              reference_image_multiple: [],
-              reference_information_extracted_multiple: [],
-              reference_strength_multiple: []
-            },
-            character: [],
-            skip: {
-              scas: false,
-              scbs: false
-            }
-          }
+      token: apiKey,
+        model,
+        width,
+        height,
+        steps: ctx.config.steps,
+      prompt: finalPrompt,
+        n_prompt: ctx.config.negativePrompt,
+        scale: ctx.config.cfgScale.toString(),
+        auto: false,
+        cfg_scale: '0',
+        seed: '-1',
+        sampler,
+        SMEA: false,
+        DYN: false,
+        noise: noiseSchedule,
+        img2: {
+          img: '',
+          noise: '0',
+          strength: '0.7',
+          typesetting: '1'
+        },
+        reference: {
+          reference_image_multiple: [],
+          reference_information_extracted_multiple: [],
+          reference_strength_multiple: []
+        },
+        character: [],
+        skip: {
+          scas: false,
+          scbs: false
+        }
+      }
 
-          const response = await ctx.http.post('https://apis.loliy.top/v1/images/generate', requestData, {
-            headers: {
-              'Authorization': `Bearer ${apiKey}`,
-              'Content-Type': 'application/json'
+      const response = await ctx.http.post('https://apis.loliy.top/v1/images/generate', requestData, {
+        headers: {
+        'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
             },
             timeout: 60000
-          })
+      })
 
           if (!response) {
             throw new Error('API返回为空')
@@ -983,16 +986,16 @@ export function apply(ctx: Context) {
         if (ctx.config.useForwardMessage) {
           try {
             if (ctx.config.contentMode === '仅图片') {
-              msg = await session.send(
-                jsx("message", { 
-                  forward: true, 
-                  children: jsx("message", { 
-                    userId: session.selfId, 
-                    nickname: '生成的图片',
-                    children: content 
-                  }) 
-                })
-              )
+            msg = await session.send(
+              jsx("message", { 
+                forward: true, 
+                children: jsx("message", { 
+                  userId: session.selfId, 
+                  nickname: '生成的图片',
+                  children: content 
+                }) 
+              })
+            )
             } else {
               const imageMessage = jsx("message", {
                 userId: session.selfId,
@@ -1023,11 +1026,11 @@ export function apply(ctx: Context) {
               )
             }
           } catch (error) {
-            ctx.logger('loliy-novelai').warn('合并转发失败，将使用普通方式发送', error)
-            msg = await session.send(content)
-          }
-        } else {
-          msg = await session.send(h.quote(session.messageId) + content)
+          ctx.logger('loliy-novelai').warn('合并转发失败，将使用普通方式发送', error)
+          msg = await session.send(content)
+        }
+      } else {
+        msg = await session.send(h.quote(session.messageId) + content)
         }
         
         // 如果启用了自动撤回
@@ -1070,7 +1073,7 @@ export function apply(ctx: Context) {
             userErrorMessage = 'API服务器内部错误，请稍后重试。'
           } else if (errorMessage.includes('503')) {
             userErrorMessage = 'API服务暂时不可用，请稍后重试。'
-          } else {
+      } else {
             userErrorMessage = `生成图片失败: ${errorMessage}`
           }
 
@@ -1086,7 +1089,7 @@ export function apply(ctx: Context) {
     // 如果所有重试都失败了，抛出最后一个错误
     if (lastError) {
       throw lastError
-    }
+      }
   }
 
   // 根据模型获取适合的采样器
