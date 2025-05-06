@@ -289,6 +289,8 @@ export interface Config {
   useForwardMessage: boolean
   autoRecall: boolean
   recallDelay: number
+  autoRecallPrompt: boolean
+  promptRecallDelay: number
   contentMode: ContentModeType
   enableTranslation: boolean
   showTranslationResult: boolean
@@ -302,6 +304,7 @@ export interface Config {
   enableGroupBlacklist: boolean
   groupWhitelist: string[]
   groupBlacklist: string[]
+  showRestrictionMessage: boolean
 }
 
 export const Config = Schema.intersect([
@@ -399,15 +402,25 @@ export const Config = Schema.intersect([
     autoRecall: Schema.boolean()
       .default(false)
       .description('自动撤回生成的图片')
-      .role('switch')
-      .description('启用后可以设置自动撤回延迟时间'),
+      .role('switch'),
     recallDelay: Schema.number()
       .default(50)
       .min(10)
       .max(120)
       .step(1)
       .description('自动撤回延迟时间(秒)')
-      .disabled(true),
+      .disabled(({ autoRecall }) => !autoRecall),
+    autoRecallPrompt: Schema.boolean()
+      .default(false)
+      .description('自动撤回提示消息（生成中、翻译等提示）')
+      .role('switch'),
+    promptRecallDelay: Schema.number()
+      .default(10)
+      .min(5)
+      .max(60)
+      .step(1)
+      .description('提示消息撤回延迟时间(秒)')
+      .disabled(({ autoRecallPrompt }) => !autoRecallPrompt),
     contentMode: Schema.union(CONTENT_MODES)
       .default('仅图片')
       .description('发送内容模式'),
@@ -463,7 +476,11 @@ export const Config = Schema.intersect([
     groupBlacklist: Schema.array(String)
       .default([])
       .description('群组黑名单列表 (仅在启用群组黑名单时生效)')
-      .role('table')
+      .role('table'),
+    showRestrictionMessage: Schema.boolean()
+      .default(true)
+      .description('是否显示群组限制提示消息 (关闭后将不会回复任何限制提示)')
+      .role('switch')
   }).description('群组限制')
 ])
 
@@ -671,6 +688,8 @@ export function apply(ctx: Context) {
 
     // 检查群组权限
     if (!canGroupUse(groupId)) {
+      if (!ctx.config.showRestrictionMessage) return 0
+      
       if (ctx.config.enableGroupWhitelist) {
         if (ctx.config.groupWhitelist.length === 0) {
           throw new Error('当前未设置任何白名单群组，所有群组均无法使用绘图功能。')
@@ -798,7 +817,21 @@ export function apply(ctx: Context) {
         // 只有用户的第一个请求才发送处理提示
         if (!usersSentProcessingMessage.has(nextItem.userId)) {
             const apiTypeText = ctx.config.apiType === 'hua' ? 'Hua' : 'Loliy'
-            await nextItem.session.send(`正在使用${apiTypeText} API生成图片... (${size}, ${currentSizeCategory}, 模型: ${modelName})`)
+            const processingMsg = await nextItem.session.send(
+              `正在使用${apiTypeText} API生成图片... (${size}, ${currentSizeCategory}, 模型: ${modelName})`
+            )
+            
+            // 如果启用了提示消息自动撤回
+            if (ctx.config.autoRecallPrompt && processingMsg) {
+              setTimeout(async () => {
+                try {
+                  await nextItem.session.bot.deleteMessage(nextItem.session.channelId, processingMsg)
+                } catch (error) {
+                  ctx.logger('loliy-novelai').error('撤回处理中消息失败', error)
+                }
+              }, ctx.config.promptRecallDelay * 1000)
+            }
+            
           usersSentProcessingMessage.add(nextItem.userId)
         }
 
@@ -862,7 +895,18 @@ export function apply(ctx: Context) {
             
             if (translatedPrompt && translatedPrompt !== userPrompt) {
               if (ctx.config.showTranslationResult) {
-                await session.send(`已将提示词翻译为: ${translatedPrompt}`)
+                const translationMsg = await session.send(`已将提示词翻译为: ${translatedPrompt}`)
+                
+                // 如果启用了提示消息自动撤回
+                if (ctx.config.autoRecallPrompt && translationMsg) {
+                  setTimeout(async () => {
+                    try {
+                      await session.bot.deleteMessage(session.channelId, translationMsg)
+                    } catch (error) {
+                      ctx.logger('loliy-novelai').error('撤回翻译提示消息失败', error)
+                    }
+                  }, ctx.config.promptRecallDelay * 1000)
+                }
               }
               userPrompt = translatedPrompt
             }
@@ -1232,38 +1276,38 @@ export function apply(ctx: Context) {
     .example('画 v4 方图 1girl,  大图')
     .action(async ({ session }, ...args) => {
       try {
-      const text = args.join(' ')
-      
-      // 解析模型快捷选择
-      const { modelOverride, processedText } = parseModelShortcut(text)
-      
-      // 确定尺寸类型
-      let sizeCategory: SizeCategoryType = '标准尺寸'
-      let finalText = processedText
-
-      // 检查是否包含大图或壁纸关键词
-      if (finalText.includes('大图')) {
-        sizeCategory = '大图尺寸'
-        finalText = finalText.replace('大图', '').trim()
-      } else if (finalText.includes('壁纸')) {
-        sizeCategory = '壁纸尺寸'
-        finalText = finalText.replace('壁纸', '').trim()
-      }
-
-      // 使用新的方向提取函数
-      const { orientation, processedText: textWithoutOrientation } = extractOrientation(finalText)
-      finalText = textWithoutOrientation
-
-      // 清理提示词，删除反斜杠和 LoRA 标签
-      finalText = cleanPrompt(finalText)
-
-      // 添加到队列并处理
-      const position = addToQueue(session, finalText, orientation, sizeCategory, modelOverride)
+        const text = args.join(' ')
         
+        // 解析模型快捷选择
+        const { modelOverride, processedText } = parseModelShortcut(text)
+        
+        // 确定尺寸类型
+        let sizeCategory: SizeCategoryType = '标准尺寸'
+        let finalText = processedText
+
+        // 检查是否包含大图或壁纸关键词
+        if (finalText.includes('大图')) {
+          sizeCategory = '大图尺寸'
+          finalText = finalText.replace('大图', '').trim()
+        } else if (finalText.includes('壁纸')) {
+          sizeCategory = '壁纸尺寸'
+          finalText = finalText.replace('壁纸', '').trim()
+        }
+
+        // 使用新的方向提取函数
+        const { orientation, processedText: textWithoutOrientation } = extractOrientation(finalText)
+        finalText = textWithoutOrientation
+
+        // 清理提示词，删除反斜杠和 LoRA 标签
+        finalText = cleanPrompt(finalText)
+
+        // 添加到队列并处理
+        const position = addToQueue(session, finalText, orientation, sizeCategory, modelOverride)
+          
         // 获取用户剩余次数
         const remainingDraws = getUserRemainingDraws(session.userId)
         let remainingMsg = ''
-        
+          
         // 只在以下情况显示剩余次数:
         // 1. 启用了每日限制
         // 2. 用户不是白名单用户
@@ -1274,20 +1318,56 @@ export function apply(ctx: Context) {
             remainingMsg = `\n今日剩余次数: ${remainingDraws}/${ctx.config.dailyLimit}`
           }
         }
-      
-      if (position > 1) {
-          return `您当前排在第 ${position} 位，请稍候。\n前面还有 ${position - 1} 个请求在等待处理。${remainingMsg}`
-      }
-
-      // 启动队列处理
-        processQueue()
         
+        if (position > 1) {
+          const queueMsg = await session.send(
+            `您当前排在第 ${position} 位，请稍候。\n前面还有 ${position - 1} 个请求在等待处理。${remainingMsg}`
+          )
+
+          // 如果启用了提示消息自动撤回
+          if (ctx.config.autoRecallPrompt && queueMsg) {
+            setTimeout(async () => {
+              try {
+                await session.bot.deleteMessage(session.channelId, queueMsg)
+              } catch (error) {
+                ctx.logger('loliy-novelai').error('撤回队列等待消息失败', error)
+              }
+            }, ctx.config.promptRecallDelay * 1000)
+          }
+          return
+        }
+
+        // 启动队列处理
+        processQueue()
+          
         // 如果没有其他消息，只返回剩余次数信息
         if (remainingMsg) {
-          return remainingMsg.trim()
+          const remainingMsgId = await session.send(remainingMsg.trim())
+          
+          // 如果启用了提示消息自动撤回
+          if (ctx.config.autoRecallPrompt && remainingMsgId) {
+            setTimeout(async () => {
+              try {
+                await session.bot.deleteMessage(session.channelId, remainingMsgId)
+              } catch (error) {
+                ctx.logger('loliy-novelai').error('撤回剩余次数消息失败', error)
+              }
+            }, ctx.config.promptRecallDelay * 1000)
+          }
         }
       } catch (error) {
-        return error.message
+        const errorMsg = await session.send(error.message)
+        
+        // 如果启用了提示消息自动撤回，也撤回错误消息
+        if (ctx.config.autoRecallPrompt && errorMsg) {
+          setTimeout(async () => {
+            try {
+              await session.bot.deleteMessage(session.channelId, errorMsg)
+            } catch (error) {
+              ctx.logger('loliy-novelai').error('撤回错误消息失败', error)
+            }
+          }, ctx.config.promptRecallDelay * 1000)
+        }
       }
     })
 
@@ -1300,6 +1380,8 @@ export function apply(ctx: Context) {
 
       // 先检查群组权限
       if (!canGroupUse(groupId)) {
+        if (!ctx.config.showRestrictionMessage) return
+        
         if (ctx.config.enableGroupWhitelist) {
           if (ctx.config.groupWhitelist.length === 0) {
             return '当前未设置任何白名单群组，所有群组均无法使用绘图功能。'
@@ -1334,6 +1416,8 @@ export function apply(ctx: Context) {
 
       // 先检查群组权限
       if (!canGroupUse(groupId)) {
+        if (!ctx.config.showRestrictionMessage) return
+        
         if (ctx.config.enableGroupWhitelist) {
           if (ctx.config.groupWhitelist.length === 0) {
             return '当前未设置任何白名单群组，所有群组均无法使用绘图功能。'
@@ -1358,6 +1442,7 @@ export function apply(ctx: Context) {
         '可用模型：',
         '- v4：NAI Diffusion V4 完整版',
         '- v4c：NAI Diffusion V4 先行版',
+        '- v4.5c：NAI Diffusion V4.5 先行版',
         '- v3：NAI Diffusion Anime V3',
         '- furry/v3f：NAI Diffusion Furry V3',
         '',

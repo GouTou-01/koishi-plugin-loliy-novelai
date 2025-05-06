@@ -49,6 +49,8 @@ export interface Config {
     useForwardMessage: boolean;
     autoRecall: boolean;
     recallDelay: number;
+    autoRecallPrompt: boolean;
+    promptRecallDelay: number;
     contentMode: ContentModeType;
     enableTranslation: boolean;
     showTranslationResult: boolean;
@@ -62,6 +64,7 @@ export interface Config {
     enableGroupBlacklist: boolean;
     groupWhitelist: string[];
     groupBlacklist: string[];
+    showRestrictionMessage: boolean;
 }
 export declare const Config: Schema<Schemastery.ObjectS<{
     apiType: Schema<"loliy" | "hua", "loliy" | "hua">;
@@ -88,6 +91,8 @@ export declare const Config: Schema<Schemastery.ObjectS<{
     useForwardMessage: Schema<boolean, boolean>;
     autoRecall: Schema<boolean, boolean>;
     recallDelay: Schema<number, number>;
+    autoRecallPrompt: Schema<boolean, boolean>;
+    promptRecallDelay: Schema<number, number>;
     contentMode: Schema<"仅图片" | "详细模式", "仅图片" | "详细模式">;
     enableTranslation: Schema<boolean, boolean>;
     showTranslationResult: Schema<boolean, boolean>;
@@ -103,6 +108,7 @@ export declare const Config: Schema<Schemastery.ObjectS<{
     groupWhitelist: Schema<string[], string[]>;
     enableGroupBlacklist: Schema<boolean, boolean>;
     groupBlacklist: Schema<string[], string[]>;
+    showRestrictionMessage: Schema<boolean, boolean>;
 }>, {
     apiType: "loliy" | "hua";
     apiKeys: string[];
@@ -128,6 +134,8 @@ export declare const Config: Schema<Schemastery.ObjectS<{
     useForwardMessage: boolean;
     autoRecall: boolean;
     recallDelay: number;
+    autoRecallPrompt: boolean;
+    promptRecallDelay: number;
     contentMode: "仅图片" | "详细模式";
     enableTranslation: boolean;
     showTranslationResult: boolean;
@@ -143,6 +151,7 @@ export declare const Config: Schema<Schemastery.ObjectS<{
     groupWhitelist: string[];
     enableGroupBlacklist: boolean;
     groupBlacklist: string[];
+    showRestrictionMessage: boolean;
 }>;
 export declare function apply(ctx: Context): void;
 export {};
