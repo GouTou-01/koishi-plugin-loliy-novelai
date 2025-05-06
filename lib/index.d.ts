@@ -4,6 +4,7 @@ export declare const usage = "\n<h1>NovelAI\u7ED8\u753B\u7B2C\u4E09\u65B9\u5E73\
 declare const MODEL_MAP: {
     readonly 'NAI Diffusion V4 \u5B8C\u6574\u7248': "nai-diffusion-4-full";
     readonly 'NAI Diffusion V4 \u5148\u884C\u7248': "nai-diffusion-4-curated-preview";
+    readonly 'NAI Diffusion V4.5 \u5148\u884C\u7248': "nai-diffusion-4-5-curated";
     readonly 'NAI Diffusion Anime V3': "nai-diffusion-3";
     readonly 'NAI Diffusion Furry V3': "nai-diffusion-furry-3";
 };
@@ -57,6 +58,10 @@ export interface Config {
     dailyLimit: number;
     whitelistUsers: string[];
     useHuaCache: boolean;
+    enableGroupWhitelist: boolean;
+    enableGroupBlacklist: boolean;
+    groupWhitelist: string[];
+    groupBlacklist: string[];
 }
 export declare const Config: Schema<Schemastery.ObjectS<{
     apiType: Schema<"loliy" | "hua", "loliy" | "hua">;
@@ -66,7 +71,7 @@ export declare const Config: Schema<Schemastery.ObjectS<{
     useHuaCache: Schema<boolean, boolean>;
     defaultSizeCategory: Schema<"标准尺寸" | "大图尺寸" | "壁纸尺寸" | "小图尺寸", "标准尺寸" | "大图尺寸" | "壁纸尺寸" | "小图尺寸">;
     defaultOrientation: Schema<"竖图" | "横图" | "方图", "竖图" | "横图" | "方图">;
-    model: Schema<"NAI Diffusion V4 完整版" | "NAI Diffusion V4 先行版" | "NAI Diffusion Anime V3" | "NAI Diffusion Furry V3", "NAI Diffusion V4 完整版" | "NAI Diffusion V4 先行版" | "NAI Diffusion Anime V3" | "NAI Diffusion Furry V3">;
+    model: Schema<"NAI Diffusion V4 完整版" | "NAI Diffusion V4 先行版" | "NAI Diffusion V4.5 先行版" | "NAI Diffusion Anime V3" | "NAI Diffusion Furry V3", "NAI Diffusion V4 完整版" | "NAI Diffusion V4 先行版" | "NAI Diffusion V4.5 先行版" | "NAI Diffusion Anime V3" | "NAI Diffusion Furry V3">;
     enableLargeSize: Schema<boolean, boolean>;
     enableWallpaperSize: Schema<boolean, boolean>;
 }> | Schemastery.ObjectS<{
@@ -93,6 +98,11 @@ export declare const Config: Schema<Schemastery.ObjectS<{
     enableDailyLimit: Schema<boolean, boolean>;
     dailyLimit: Schema<number, number>;
     whitelistUsers: Schema<string[], string[]>;
+}> | Schemastery.ObjectS<{
+    enableGroupWhitelist: Schema<boolean, boolean>;
+    groupWhitelist: Schema<string[], string[]>;
+    enableGroupBlacklist: Schema<boolean, boolean>;
+    groupBlacklist: Schema<string[], string[]>;
 }>, {
     apiType: "loliy" | "hua";
     apiKeys: string[];
@@ -101,7 +111,7 @@ export declare const Config: Schema<Schemastery.ObjectS<{
     useHuaCache: boolean;
     defaultSizeCategory: "标准尺寸" | "大图尺寸" | "壁纸尺寸" | "小图尺寸";
     defaultOrientation: "竖图" | "横图" | "方图";
-    model: "NAI Diffusion V4 完整版" | "NAI Diffusion V4 先行版" | "NAI Diffusion Anime V3" | "NAI Diffusion Furry V3";
+    model: "NAI Diffusion V4 完整版" | "NAI Diffusion V4 先行版" | "NAI Diffusion V4.5 先行版" | "NAI Diffusion Anime V3" | "NAI Diffusion Furry V3";
     enableLargeSize: boolean;
     enableWallpaperSize: boolean;
 } & import("cosmokit").Dict & {
@@ -128,6 +138,11 @@ export declare const Config: Schema<Schemastery.ObjectS<{
     enableDailyLimit: boolean;
     dailyLimit: number;
     whitelistUsers: string[];
+} & {
+    enableGroupWhitelist: boolean;
+    groupWhitelist: string[];
+    enableGroupBlacklist: boolean;
+    groupBlacklist: string[];
 }>;
 export declare function apply(ctx: Context): void;
 export {};

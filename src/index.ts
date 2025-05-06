@@ -29,6 +29,7 @@ export const usage = `
 const AVAILABLE_MODELS = {
   'nai-diffusion-4-full': 'NAI Diffusion V4 完整版',
   'nai-diffusion-4-curated-preview': 'NAI Diffusion V4 先行版',
+  'nai-diffusion-4-5-curated': 'NAI Diffusion V4.5 先行版',
   'nai-diffusion-3': 'NAI Diffusion Anime V3',
   'nai-diffusion-furry-3': 'NAI Diffusion Furry V3'
 } as const
@@ -37,6 +38,7 @@ const AVAILABLE_MODELS = {
 const MODEL_MAP = {
   'NAI Diffusion V4 完整版': 'nai-diffusion-4-full',
   'NAI Diffusion V4 先行版': 'nai-diffusion-4-curated-preview',
+  'NAI Diffusion V4.5 先行版': 'nai-diffusion-4-5-curated',
   'NAI Diffusion Anime V3': 'nai-diffusion-3',
   'NAI Diffusion Furry V3': 'nai-diffusion-furry-3'
 } as const
@@ -296,6 +298,10 @@ export interface Config {
   dailyLimit: number
   whitelistUsers: string[]
   useHuaCache: boolean
+  enableGroupWhitelist: boolean
+  enableGroupBlacklist: boolean
+  groupWhitelist: string[]
+  groupBlacklist: string[]
 }
 
 export const Config = Schema.intersect([
@@ -439,7 +445,26 @@ export const Config = Schema.intersect([
       .default([])
       .description('白名单用户ID列表 (这些用户不受每日限制，仅在启用每日限制时生效)')
       .role('table')
-  }).description('用户限制')
+  }).description('用户限制'),
+
+  Schema.object({
+    enableGroupWhitelist: Schema.boolean()
+      .default(false)
+      .description('是否启用群组白名单 (启用后只有白名单内的群可以使用)')
+      .role('switch'),
+    groupWhitelist: Schema.array(String)
+      .default([])
+      .description('群组白名单列表 (仅在启用群组白名单时生效)')
+      .role('table'),
+    enableGroupBlacklist: Schema.boolean()
+      .default(false)
+      .description('是否启用群组黑名单 (启用后黑名单内的群无法使用)')
+      .role('switch'),
+    groupBlacklist: Schema.array(String)
+      .default([])
+      .description('群组黑名单列表 (仅在启用群组黑名单时生效)')
+      .role('table')
+  }).description('群组限制')
 ])
 
 export function apply(ctx: Context) {
@@ -610,6 +635,29 @@ export function apply(ctx: Context) {
     }
   }
 
+  // 检查群组是否可以使用绘图功能
+  function canGroupUse(groupId: string): boolean {
+    // 如果不是群聊消息，允许使用
+    if (!groupId) return true
+    
+    // 如果启用了白名单
+    if (ctx.config.enableGroupWhitelist) {
+      // 如果白名单为空，所有群都不能使用
+      if (ctx.config.groupWhitelist.length === 0) {
+        return false
+      }
+      return ctx.config.groupWhitelist.includes(groupId)
+    }
+    
+    // 如果启用了黑名单
+    if (ctx.config.enableGroupBlacklist) {
+      return !ctx.config.groupBlacklist.includes(groupId)
+    }
+    
+    // 默认允许使用
+    return true
+  }
+
   // 修改添加到队列的函数
   function addToQueue(
     session: any, 
@@ -619,6 +667,19 @@ export function apply(ctx: Context) {
     modelOverride?: string | null
   ): number {
     const userId = session.userId
+    const groupId = session.guildId || session.channelId
+
+    // 检查群组权限
+    if (!canGroupUse(groupId)) {
+      if (ctx.config.enableGroupWhitelist) {
+        if (ctx.config.groupWhitelist.length === 0) {
+          throw new Error('当前未设置任何白名单群组，所有群组均无法使用绘图功能。')
+        }
+        throw new Error('当前群组不在白名单中，无法使用绘图功能。')
+      } else {
+        throw new Error('当前群组在黑名单中，无法使用绘图功能。')
+      }
+    }
     
     // 检查用户是否可以使用绘图功能
     if (!canUserDraw(userId)) {
@@ -1127,6 +1188,7 @@ export function apply(ctx: Context) {
     const modelKeywords = {
       'v4': 'nai-diffusion-4-full',
       'v4c': 'nai-diffusion-4-curated-preview',
+      'v4.5c': 'nai-diffusion-4-5-curated',
       'v3': 'nai-diffusion-3',
       'furry': 'nai-diffusion-furry-3',
       'v3f': 'nai-diffusion-furry-3'
@@ -1234,6 +1296,20 @@ export function apply(ctx: Context) {
     .alias('剩余次数')
     .alias('查询次数')
     .action(async ({ session }) => {
+      const groupId = session.guildId || session.channelId
+
+      // 先检查群组权限
+      if (!canGroupUse(groupId)) {
+        if (ctx.config.enableGroupWhitelist) {
+          if (ctx.config.groupWhitelist.length === 0) {
+            return '当前未设置任何白名单群组，所有群组均无法使用绘图功能。'
+          }
+          return '当前群组不在白名单中，无法使用绘图功能。'
+        } else {
+          return '当前群组在黑名单中，无法使用绘图功能。'
+        }
+      }
+
       // 如果未启用每日限制
       if (!ctx.config.enableDailyLimit) {
         return '当前未启用每日绘图次数限制，可以无限使用。'
@@ -1254,6 +1330,20 @@ export function apply(ctx: Context) {
     .alias('绘画菜单')
     .alias('绘画功能')
     .action(async ({ session }) => {
+      const groupId = session.guildId || session.channelId
+
+      // 先检查群组权限
+      if (!canGroupUse(groupId)) {
+        if (ctx.config.enableGroupWhitelist) {
+          if (ctx.config.groupWhitelist.length === 0) {
+            return '当前未设置任何白名单群组，所有群组均无法使用绘图功能。'
+          }
+          return '当前群组不在白名单中，无法使用绘图功能。'
+        } else {
+          return '当前群组在黑名单中，无法使用绘图功能。'
+        }
+      }
+
       return [
         '=== AI绘画功能菜单 ===',
         '基础命令：',
