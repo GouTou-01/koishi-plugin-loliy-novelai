@@ -59,12 +59,24 @@ export interface Config {
     enableDailyLimit: boolean;
     dailyLimit: number;
     whitelistUsers: string[];
+    /** 不同群组的每日绘图次数限制配置 */
+    groupDailyLimits: Array<{
+        /** 群组ID */
+        groupId: string;
+        /** 该群每个用户的每日绘图次数限制 */
+        limit: number;
+    }>;
     useHuaCache: boolean;
     enableGroupWhitelist: boolean;
     enableGroupBlacklist: boolean;
     groupWhitelist: string[];
     groupBlacklist: string[];
     showRestrictionMessage: boolean;
+    maxDrawCount: number;
+    jrandomMin: number;
+    jrandomMax: number;
+    /** Hua API并发处理请求的最大数量，允许同一个密钥处理多个请求 */
+    maxConcurrentThreads: number;
 }
 export declare const Config: Schema<Schemastery.ObjectS<{
     apiType: Schema<"loliy" | "hua", "loliy" | "hua">;
@@ -72,6 +84,7 @@ export declare const Config: Schema<Schemastery.ObjectS<{
     huaAuthKeys: Schema<string[], string[]>;
     huaNaiKeys: Schema<string[], string[]>;
     useHuaCache: Schema<boolean, boolean>;
+    maxConcurrentThreads: Schema<number, number>;
     defaultSizeCategory: Schema<"标准尺寸" | "大图尺寸" | "壁纸尺寸" | "小图尺寸", "标准尺寸" | "大图尺寸" | "壁纸尺寸" | "小图尺寸">;
     defaultOrientation: Schema<"竖图" | "横图" | "方图", "竖图" | "横图" | "方图">;
     model: Schema<"NAI Diffusion V4 完整版" | "NAI Diffusion V4 先行版" | "NAI Diffusion V4.5 先行版" | "NAI Diffusion Anime V3" | "NAI Diffusion Furry V3", "NAI Diffusion V4 完整版" | "NAI Diffusion V4 先行版" | "NAI Diffusion V4.5 先行版" | "NAI Diffusion Anime V3" | "NAI Diffusion Furry V3">;
@@ -96,6 +109,9 @@ export declare const Config: Schema<Schemastery.ObjectS<{
     contentMode: Schema<"仅图片" | "详细模式", "仅图片" | "详细模式">;
     enableTranslation: Schema<boolean, boolean>;
     showTranslationResult: Schema<boolean, boolean>;
+    maxDrawCount: Schema<number, number>;
+    jrandomMin: Schema<number, number>;
+    jrandomMax: Schema<number, number>;
 }> | Schemastery.ObjectS<{
     maxRetries: Schema<number, number>;
     retryDelay: Schema<number, number>;
@@ -103,6 +119,13 @@ export declare const Config: Schema<Schemastery.ObjectS<{
     enableDailyLimit: Schema<boolean, boolean>;
     dailyLimit: Schema<number, number>;
     whitelistUsers: Schema<string[], string[]>;
+    groupDailyLimits: Schema<Schemastery.ObjectS<{
+        groupId: Schema<string, string>;
+        limit: Schema<number, number>;
+    }>[], Schemastery.ObjectT<{
+        groupId: Schema<string, string>;
+        limit: Schema<number, number>;
+    }>[]>;
 }> | Schemastery.ObjectS<{
     enableGroupWhitelist: Schema<boolean, boolean>;
     groupWhitelist: Schema<string[], string[]>;
@@ -115,6 +138,7 @@ export declare const Config: Schema<Schemastery.ObjectS<{
     huaAuthKeys: string[];
     huaNaiKeys: string[];
     useHuaCache: boolean;
+    maxConcurrentThreads: number;
     defaultSizeCategory: "标准尺寸" | "大图尺寸" | "壁纸尺寸" | "小图尺寸";
     defaultOrientation: "竖图" | "横图" | "方图";
     model: "NAI Diffusion V4 完整版" | "NAI Diffusion V4 先行版" | "NAI Diffusion V4.5 先行版" | "NAI Diffusion Anime V3" | "NAI Diffusion Furry V3";
@@ -139,6 +163,9 @@ export declare const Config: Schema<Schemastery.ObjectS<{
     contentMode: "仅图片" | "详细模式";
     enableTranslation: boolean;
     showTranslationResult: boolean;
+    maxDrawCount: number;
+    jrandomMin: number;
+    jrandomMax: number;
 } & {
     maxRetries: number;
     retryDelay: number;
@@ -146,6 +173,10 @@ export declare const Config: Schema<Schemastery.ObjectS<{
     enableDailyLimit: boolean;
     dailyLimit: number;
     whitelistUsers: string[];
+    groupDailyLimits: Schemastery.ObjectT<{
+        groupId: Schema<string, string>;
+        limit: Schema<number, number>;
+    }>[];
 } & {
     enableGroupWhitelist: boolean;
     groupWhitelist: string[];
