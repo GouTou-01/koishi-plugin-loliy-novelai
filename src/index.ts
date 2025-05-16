@@ -401,11 +401,11 @@ export const Config = Schema.intersect([
       .default('k_euler_ancestral')
       .description('采样器 (根据模型自动调整可用选项)'),
     cfgScale: Schema.number()
-      .default(5)
-      .min(1)
-      .max(10)
-      .step(0.5)
-      .description('提示词相关性 (01-10)'),
+      .default(5.0)
+      .min(1.0)
+      .max(10.0)
+      .step(0.1)
+      .description('提示词相关性 (1.0-10.0)'),
     steps: Schema.number()
       .default(23)
       .min(1)
@@ -541,6 +541,9 @@ export const Config = Schema.intersect([
 export function apply(ctx: Context) {
   // 存储用户选择的模型
   const userModels = new Map<string, string>()
+  
+  // 保存原始的cfgScale值
+  const originalCfgScale = parseFloat(ctx.config.cfgScale.toString());
   
   // 修改队列项接口
   interface QueueItem {
@@ -1372,7 +1375,7 @@ export function apply(ctx: Context) {
           huaUrl.searchParams.set('size', currentOrientation)
           huaUrl.searchParams.set('sampler', sampler)
           huaUrl.searchParams.set('noise_schedule', noiseSchedule)
-          huaUrl.searchParams.set('scale', ctx.config.cfgScale.toString())
+          huaUrl.searchParams.set('scale', originalCfgScale.toFixed(1))
           huaUrl.searchParams.set('steps', ctx.config.steps.toString())
           huaUrl.searchParams.append('no_random_artist', '')
           
@@ -1393,7 +1396,7 @@ export function apply(ctx: Context) {
         steps: ctx.config.steps,
       prompt: finalPrompt,
         n_prompt: ctx.config.negativePrompt,
-        scale: ctx.config.cfgScale.toString(),
+        scale: originalCfgScale.toFixed(1),
         auto: false,
         cfg_scale: '0',
         seed: '-1',
@@ -1483,7 +1486,7 @@ export function apply(ctx: Context) {
             `\n种子: ${seed}`,
             `\n采样器: ${sampler}`,
             `\n步数: ${ctx.config.steps}`,
-            `\n提示词相关性: ${ctx.config.cfgScale}`,
+            `\n提示词相关性: ${originalCfgScale.toFixed(1)}`,
             `\n噪声调度: ${noiseSchedule}`,
             `\n尺寸: ${width}x${height}`
           ].join('')
@@ -1520,7 +1523,7 @@ export function apply(ctx: Context) {
                   `\n种子: ${seed}`,
                   `\n采样器: ${sampler}`,
                   `\n步数: ${ctx.config.steps}`,
-                  `\n提示词相关性: ${ctx.config.cfgScale}`,
+                  `\n提示词相关性: ${originalCfgScale.toFixed(1)}`,
                   `\n噪声调度: ${noiseSchedule}`,
                   `\n尺寸: ${width}x${height}`
                 ].join('')

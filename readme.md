@@ -39,7 +39,7 @@
 - `enableWallpaperSize`: 是否启用壁纸尺寸(消耗更多点数，仅Loliy API支持)
 - `negativePrompt`: 默认负面提示词
 - `sampler`: 采样器
-- `cfgScale`: 提示词相关性 (1-10)
+- `cfgScale`: 提示词相关性 (1.0-10.0，支持小数值，如5.2、6.8等)
 - `steps`: 生成步数 (1-50)
 - `noiseSchedule`: 噪声调度
 
@@ -138,7 +138,7 @@
 - **采样器**：根据模型自动调整可用选项
   - NAI Diffusion V4 模型: k_euler_ancestral(默认)、k_euler、k_dpmpp_2s_ancestral、k_dpmpp_2m_sde、k_dpmpp_2m、k_dpmpp_sde
   - NAI Diffusion V3 模型: 上述所有选项 + ddim_v3
-- **提示词相关性**：控制生成图像与提示词的相关程度，范围 1-10
+- **提示词相关性**：控制生成图像与提示词的相关程度，范围 1.0-10.0，支持设置小数值（如5.2、6.8等）
 - **生成步数**：控制生成的精细程度，范围 20-50
 - **噪声调度**：根据模型自动调整可用选项
   - NAI Diffusion V4 模型: karras(默认)、exponential、polyexponential
