@@ -880,7 +880,8 @@ export function apply(ctx: Context) {
     orientation?: OrientationType, 
     sizeCategory?: SizeCategoryType,
     modelOverride?: string | null,
-    disableArtistPrompt?: boolean
+    disableArtistPrompt?: boolean,
+    lastArtistPrompt?: string  // 新增：传递上次的画师提示词
   ): number {
     const userId = session.userId
     const groupId = session.guildId || session.channelId
@@ -912,7 +913,8 @@ export function apply(ctx: Context) {
     incrementUserUsage(userId)
     
     // 保存用户的提示词，用于"再来一张"功能
-    saveUserLastPrompt(userId, prompt, orientation, sizeCategory, modelOverride, disableArtistPrompt)
+    // 使用传入的lastArtistPrompt或初始值"null"
+    saveUserLastPrompt(userId, prompt, orientation, sizeCategory, modelOverride, disableArtistPrompt, lastArtistPrompt || "null")
     
     const queueItem: QueueItem = {
       userId: userId,
@@ -1258,20 +1260,21 @@ export function apply(ctx: Context) {
         let artistPrompt = ''
         
         // 检查是否是重画请求，以及是否需要使用上次的画师提示词
-        const isRedraw = item.userId && getUserLastPrompt(item.userId)?.lastArtistPrompt !== undefined;
-        const lastArtistPrompt = isRedraw ? getUserLastPrompt(item.userId)?.lastArtistPrompt : undefined;
+        const lastPromptData = item.userId ? getUserLastPrompt(item.userId) : undefined;
+        const lastArtistPrompt = lastPromptData?.lastArtistPrompt;
+        
+        // 移除调试输出
+        // console.log(`[DEBUG] 用户: ${item.userId} | 重画随机: ${ctx.config.randomArtistOnRedraw} | 上次画师: ${lastArtistPrompt || '无'}`);
         
         // 1. 处理画师提示词 - 处理重画时的画师提示词逻辑
         if (ctx.config.enableArtistPrompts && !disableArtistPrompt && !hasArtistTag(userPrompt)) {
           if (ctx.config.artistPrompts && ctx.config.artistPrompts.length > 0) {
-            // 重画且配置设置不随机选择画师，则使用上次的画师提示词
-            if (isRedraw && !ctx.config.randomArtistOnRedraw && lastArtistPrompt) {
+            // 如果有上次的画师提示词且配置为不随机，则使用上次的画师提示词
+            if (lastArtistPrompt && lastArtistPrompt !== 'null' && !ctx.config.randomArtistOnRedraw) {
               artistPrompt = lastArtistPrompt;
-              // ctx.logger('loliy-novelai').info(`重画: 使用上次的画师提示词: "${artistPrompt}" | 用户ID: ${item.userId}`);
             } else {
               // 随机选择画师提示词
               artistPrompt = ctx.config.artistPrompts[Math.floor(Math.random() * ctx.config.artistPrompts.length)].trim();
-              // ctx.logger('loliy-novelai').info(`选择画师提示词: "${artistPrompt}" | 用户ID: ${item.userId}`);
             }
             
             // Check if artist prompt ends with comma and log it
@@ -1527,6 +1530,7 @@ export function apply(ctx: Context) {
               lastPromptData.disableArtistPrompt,
               cleanedArtistPrompt  // 保存本次使用的画师提示词
             );
+            // 移除调试输出
             // ctx.logger('loliy-novelai').debug(`保存画师提示词(用于重画): "${cleanedArtistPrompt}" | 用户ID: ${item.userId}`);
           }
         }
@@ -1815,8 +1819,8 @@ export function apply(ctx: Context) {
           return await session.send('提示词不能为空，请输入有效的描述。例如：画 1girl, blue hair')
         }
 
-        // 添加到队列并处理，传递disableArtistPrompt参数
-        const position = addToQueue(session, finalText, orientation, sizeCategory, modelOverride, disableArtistPrompt)
+        // 添加到队列并处理，传递disableArtistPrompt参数，首次调用时第7个参数为null
+        const position = addToQueue(session, finalText, orientation, sizeCategory, modelOverride, disableArtistPrompt, null)
         
         // 如果position为0，说明群组不在白名单中且showRestrictionMessage为false
         if (position === 0) return
@@ -2117,8 +2121,11 @@ export function apply(ctx: Context) {
           return
         }
         
+        // 移除调试输出
+        // console.log(`[DEBUG] 重画读取到的完整lastPrompt:`, JSON.stringify(lastPrompt));
+        
         // 获取上一次的所有参数
-        const { prompt, orientation, sizeCategory, modelOverride, disableArtistPrompt } = lastPrompt
+        const { prompt, orientation, sizeCategory, modelOverride, disableArtistPrompt, lastArtistPrompt } = lastPrompt
         
         // 获取用户剩余次数，确保有足够的次数
         const remainingDraws = getUserRemainingDraws(userId, groupId)
@@ -2146,7 +2153,7 @@ export function apply(ctx: Context) {
         
         // 循环添加到队列
         for (let i = 0; i < count; i++) {
-          const position = addToQueue(session, prompt, orientation, sizeCategory, modelOverride, disableArtistPrompt)
+          const position = addToQueue(session, prompt, orientation, sizeCategory, modelOverride, disableArtistPrompt, lastArtistPrompt)
           
           // 如果position为0，说明群组不在白名单中且showRestrictionMessage为false
           if (position === 0) return
