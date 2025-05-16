@@ -77,6 +77,8 @@ export interface Config {
     jrandomMax: number;
     /** Hua API并发处理请求的最大数量，允许同一个密钥处理多个请求 */
     maxConcurrentThreads: number;
+    /** 重画时是否随机选择画师提示词 */
+    randomArtistOnRedraw: boolean;
 }
 export declare const Config: Schema<Schemastery.ObjectS<{
     apiType: Schema<"loliy" | "hua", "loliy" | "hua">;
@@ -112,6 +114,7 @@ export declare const Config: Schema<Schemastery.ObjectS<{
     maxDrawCount: Schema<number, number>;
     jrandomMin: Schema<number, number>;
     jrandomMax: Schema<number, number>;
+    randomArtistOnRedraw: Schema<boolean, boolean>;
 }> | Schemastery.ObjectS<{
     maxRetries: Schema<number, number>;
     retryDelay: Schema<number, number>;
@@ -166,6 +169,7 @@ export declare const Config: Schema<Schemastery.ObjectS<{
     maxDrawCount: number;
     jrandomMin: number;
     jrandomMax: number;
+    randomArtistOnRedraw: boolean;
 } & {
     maxRetries: number;
     retryDelay: number;

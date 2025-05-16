@@ -325,6 +325,8 @@ export interface Config {
   jrandomMax: number
   /** Hua API并发处理请求的最大数量，允许同一个密钥处理多个请求 */
   maxConcurrentThreads: number
+  /** 重画时是否随机选择画师提示词 */
+  randomArtistOnRedraw: boolean
 }
 
 export const Config = Schema.intersect([
@@ -473,7 +475,10 @@ export const Config = Schema.intersect([
       .min(2)
       .max(10)
       .step(1)
-      .description('"几"的随机范围最大值')
+      .description('"几"的随机范围最大值'),
+    randomArtistOnRedraw: Schema.boolean()
+      .default(true)
+      .description('重画时是否随机选择画师提示词 (开启=重画时随机选择，关闭=重画时使用上一次的画师提示词)'),
   }).description('特殊功能'),
   
   Schema.object({
@@ -573,11 +578,12 @@ export function apply(ctx: Context) {
   
   // 添加用户上一次提示词的存储
   const userLastPrompts = new Map<string, {
-    prompt: string,
-    orientation?: OrientationType,
-    sizeCategory?: SizeCategoryType,
-    modelOverride?: string | null,
+    prompt: string
+    orientation?: OrientationType
+    sizeCategory?: SizeCategoryType
+    modelOverride?: string | null
     disableArtistPrompt?: boolean
+    lastArtistPrompt?: string  // 新增：上次使用的画师提示词
   }>()
 
   // 添加中间件来处理各种重画命令格式
@@ -721,14 +727,16 @@ export function apply(ctx: Context) {
     orientation?: OrientationType, 
     sizeCategory?: SizeCategoryType,
     modelOverride?: string | null,
-    disableArtistPrompt?: boolean
+    disableArtistPrompt?: boolean,
+    lastArtistPrompt?: string  // 新增：上次使用的画师提示词
   ) {
     userLastPrompts.set(userId, {
       prompt,
       orientation,
       sizeCategory,
       modelOverride,
-      disableArtistPrompt
+      disableArtistPrompt,
+      lastArtistPrompt
     })
   }
 
@@ -1249,13 +1257,26 @@ export function apply(ctx: Context) {
         let finalPromptParts: string[] = []
         let artistPrompt = ''
         
-        // 1. 处理画师提示词 - 添加对disableArtistPrompt的检查
+        // 检查是否是重画请求，以及是否需要使用上次的画师提示词
+        const isRedraw = item.userId && getUserLastPrompt(item.userId)?.lastArtistPrompt !== undefined;
+        const lastArtistPrompt = isRedraw ? getUserLastPrompt(item.userId)?.lastArtistPrompt : undefined;
+        
+        // 1. 处理画师提示词 - 处理重画时的画师提示词逻辑
         if (ctx.config.enableArtistPrompts && !disableArtistPrompt && !hasArtistTag(userPrompt)) {
           if (ctx.config.artistPrompts && ctx.config.artistPrompts.length > 0) {
-            artistPrompt = ctx.config.artistPrompts[Math.floor(Math.random() * ctx.config.artistPrompts.length)].trim();
+            // 重画且配置设置不随机选择画师，则使用上次的画师提示词
+            if (isRedraw && !ctx.config.randomArtistOnRedraw && lastArtistPrompt) {
+              artistPrompt = lastArtistPrompt;
+              // ctx.logger('loliy-novelai').info(`重画: 使用上次的画师提示词: "${artistPrompt}" | 用户ID: ${item.userId}`);
+            } else {
+              // 随机选择画师提示词
+              artistPrompt = ctx.config.artistPrompts[Math.floor(Math.random() * ctx.config.artistPrompts.length)].trim();
+              // ctx.logger('loliy-novelai').info(`选择画师提示词: "${artistPrompt}" | 用户ID: ${item.userId}`);
+            }
+            
             // Check if artist prompt ends with comma and log it
             const hasEndingComma = artistPrompt.endsWith(',');
-            // ctx.logger('loliy-novelai').info(`选择画师提示词: "${artistPrompt}" | 以逗号结尾: ${hasEndingComma} | 用户ID: ${item.userId}`);
+            // ctx.logger('loliy-novelai').info(`使用画师提示词: "${artistPrompt}" | 以逗号结尾: ${hasEndingComma} | 用户ID: ${item.userId}`);
           }
         } else {
           // 记录未应用画师提示词的原因
@@ -1490,6 +1511,24 @@ export function apply(ctx: Context) {
             `\n噪声调度: ${noiseSchedule}`,
             `\n尺寸: ${width}x${height}`
           ].join('')
+        }
+        
+        // 保存当前使用的画师提示词，用于后续重画
+        if (item.userId) {
+          // 获取当前用户的提示词记录
+          const lastPromptData = getUserLastPrompt(item.userId);
+          if (lastPromptData) {
+            saveUserLastPrompt(
+              item.userId,
+              lastPromptData.prompt,
+              lastPromptData.orientation,
+              lastPromptData.sizeCategory,
+              lastPromptData.modelOverride,
+              lastPromptData.disableArtistPrompt,
+              cleanedArtistPrompt  // 保存本次使用的画师提示词
+            );
+            // ctx.logger('loliy-novelai').debug(`保存画师提示词(用于重画): "${cleanedArtistPrompt}" | 用户ID: ${item.userId}`);
+          }
         }
         
         // 发送内容
