@@ -87,6 +87,7 @@
 模型快捷选择（在画和nai命令中都可使用）：
 - 支持以下模型关键词（可以放在描述文本中的任意位置）：
   - `v4` - 使用 NAI Diffusion V4 完整版
+  - `v4.5` - 使用 NAI Diffusion V4.5 完整版
   - `v4.5c` - 使用 NAI Diffusion V4.5 先行版
   - `v4c` - 使用 NAI Diffusion V4 先行版
   - `v3` - 使用 NAI Diffusion Anime V3
@@ -94,6 +95,7 @@
 
 组合使用示例：
 - `#nai v4c 横 1girl, ` - 使用V4先行版生成横图女孩
+- `画 v4.5 方图 1girl, ` - 使用V4.5完整版生成方形女孩
 - `画 v4.5c 方图 1girl, ` - 使用V4.5先行版生成方形女孩
 - `画 方 v3 1girl, ` - 使用V3模型生成方形女孩
 - `画 -O 横图 1girl, ` - 生成横图女孩，不使用画师提示词

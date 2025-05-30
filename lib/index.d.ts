@@ -4,6 +4,7 @@ export declare const usage = "\n<h1>NovelAI\u7ED8\u753B\u7B2C\u4E09\u65B9\u5E73\
 declare const MODEL_MAP: {
     readonly 'NAI Diffusion V4 \u5B8C\u6574\u7248': "nai-diffusion-4-full";
     readonly 'NAI Diffusion V4 \u5148\u884C\u7248': "nai-diffusion-4-curated-preview";
+    readonly 'NAI Diffusion V4.5 \u5B8C\u6574\u7248': "nai-diffusion-4-5-full";
     readonly 'NAI Diffusion V4.5 \u5148\u884C\u7248': "nai-diffusion-4-5-curated";
     readonly 'NAI Diffusion Anime V3': "nai-diffusion-3";
     readonly 'NAI Diffusion Furry V3': "nai-diffusion-furry-3";
@@ -89,7 +90,7 @@ export declare const Config: Schema<Schemastery.ObjectS<{
     maxConcurrentThreads: Schema<number, number>;
     defaultSizeCategory: Schema<"标准尺寸" | "大图尺寸" | "壁纸尺寸" | "小图尺寸", "标准尺寸" | "大图尺寸" | "壁纸尺寸" | "小图尺寸">;
     defaultOrientation: Schema<"竖图" | "横图" | "方图", "竖图" | "横图" | "方图">;
-    model: Schema<"NAI Diffusion V4 完整版" | "NAI Diffusion V4 先行版" | "NAI Diffusion V4.5 先行版" | "NAI Diffusion Anime V3" | "NAI Diffusion Furry V3", "NAI Diffusion V4 完整版" | "NAI Diffusion V4 先行版" | "NAI Diffusion V4.5 先行版" | "NAI Diffusion Anime V3" | "NAI Diffusion Furry V3">;
+    model: Schema<"NAI Diffusion V4 完整版" | "NAI Diffusion V4 先行版" | "NAI Diffusion V4.5 完整版" | "NAI Diffusion V4.5 先行版" | "NAI Diffusion Anime V3" | "NAI Diffusion Furry V3", "NAI Diffusion V4 完整版" | "NAI Diffusion V4 先行版" | "NAI Diffusion V4.5 完整版" | "NAI Diffusion V4.5 先行版" | "NAI Diffusion Anime V3" | "NAI Diffusion Furry V3">;
     enableLargeSize: Schema<boolean, boolean>;
     enableWallpaperSize: Schema<boolean, boolean>;
 }> | Schemastery.ObjectS<{
@@ -144,7 +145,7 @@ export declare const Config: Schema<Schemastery.ObjectS<{
     maxConcurrentThreads: number;
     defaultSizeCategory: "标准尺寸" | "大图尺寸" | "壁纸尺寸" | "小图尺寸";
     defaultOrientation: "竖图" | "横图" | "方图";
-    model: "NAI Diffusion V4 完整版" | "NAI Diffusion V4 先行版" | "NAI Diffusion V4.5 先行版" | "NAI Diffusion Anime V3" | "NAI Diffusion Furry V3";
+    model: "NAI Diffusion V4 完整版" | "NAI Diffusion V4 先行版" | "NAI Diffusion V4.5 完整版" | "NAI Diffusion V4.5 先行版" | "NAI Diffusion Anime V3" | "NAI Diffusion Furry V3";
     enableLargeSize: boolean;
     enableWallpaperSize: boolean;
 } & import("cosmokit").Dict & {

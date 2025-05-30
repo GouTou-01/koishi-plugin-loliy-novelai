@@ -29,6 +29,7 @@ export const usage = `
 const AVAILABLE_MODELS = {
   'nai-diffusion-4-full': 'NAI Diffusion V4 完整版',
   'nai-diffusion-4-curated-preview': 'NAI Diffusion V4 先行版',
+  'nai-diffusion-4-5-full': 'NAI Diffusion V4.5 完整版',
   'nai-diffusion-4-5-curated': 'NAI Diffusion V4.5 先行版',
   'nai-diffusion-3': 'NAI Diffusion Anime V3',
   'nai-diffusion-furry-3': 'NAI Diffusion Furry V3'
@@ -38,6 +39,7 @@ const AVAILABLE_MODELS = {
 const MODEL_MAP = {
   'NAI Diffusion V4 完整版': 'nai-diffusion-4-full',
   'NAI Diffusion V4 先行版': 'nai-diffusion-4-curated-preview',
+  'NAI Diffusion V4.5 完整版': 'nai-diffusion-4-5-full',
   'NAI Diffusion V4.5 先行版': 'nai-diffusion-4-5-curated',
   'NAI Diffusion Anime V3': 'nai-diffusion-3',
   'NAI Diffusion Furry V3': 'nai-diffusion-furry-3'
@@ -1682,6 +1684,7 @@ export function apply(ctx: Context) {
     const modelKeywords = {
       'v4': 'nai-diffusion-4-full',
       'v4c': 'nai-diffusion-4-curated-preview',
+      'v4.5': 'nai-diffusion-4-5-full',
       'v4.5c': 'nai-diffusion-4-5-curated',
       'v3': 'nai-diffusion-3',
       'furry': 'nai-diffusion-furry-3',
@@ -2009,6 +2012,7 @@ export function apply(ctx: Context) {
         '',
         '可用模型：',
         '- v4：NAI Diffusion V4 完整版',
+        '- v4.5：NAI Diffusion V4.5 完整版',
         '- v4c：NAI Diffusion V4 先行版',
         '- v4.5c：NAI Diffusion V4.5 先行版',
         '- v3：NAI Diffusion Anime V3',
